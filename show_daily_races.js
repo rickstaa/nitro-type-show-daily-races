@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Nitro Type - Show Daily Races
 // @namespace    https://github.com/rickstaa/nitro-type-show-daily-races
-// @version      0.5.1
+// @version      0.6.0
 // @description  Displays the number of daily races completed by each team member in the team roster table on the Nitro Type team page.
 // @author       Rick Staa
 // @match        *://*.nitrotype.com/team/*
@@ -86,7 +86,12 @@
     const teamStatsTable = await waitForElm(
       ".table.table--striped.table--selectable.table--team.table--teamOverview"
     );
-    const teamStatsTableHeader = await waitForElm("thead tr");
+    const teamStatsTableHeaderRow = await waitForElm(
+      ".table.table--striped.table--selectable.table--team.table--teamOverview thead tr"
+    );
+    const teamStatsTableBody = await waitForElm(
+      ".table.table--striped.table--selectable.table--team.table--teamOverview tbody"
+    );
 
     // Add extra daily races header column.
     const dailyRacesHeader = document.createElement("th");
@@ -96,14 +101,14 @@
       "table-filter"
     );
     dailyRacesHeader.innerHTML = "Daily<br>Races";
-    teamStatsTableHeader.appendChild(dailyRacesHeader);
+    teamStatsTableHeaderRow.appendChild(dailyRacesHeader);
 
     // Find Team Races and Members Since columns.
-    const teamRacesColumn = teamStatsTableHeader.querySelector(
-      'th:contains("Team\\nRaces")'
+    let teamRacesColumn = Array.from(teamStatsTableHeaderRow.cells).find((cell) =>
+      cell.innerHTML.includes("Team<br>Races")
     ).cellIndex;
-    const memberSinceColumn = teamStatsTableHeader.querySelector(
-      'th:contains("Member\\nSince")'
+    let memberSinceColumn = Array.from(teamStatsTableHeaderRow.cells).find(
+      (cell) => cell.innerHTML.includes("Member<br>Since")
     ).cellIndex;
 
     // Loop through all team members and display the daily races.
@@ -131,10 +136,10 @@
       // Sort rows by dailyRaces in descending order.
       rows.sort(function (a, b) {
         const aDailyRaces = parseInt(
-          a.cells[teamStatsTableHeader.cells.length - 1].textContent
+          a.cells[teamStatsTableHeaderRow.cells.length - 1].textContent
         );
         const bDailyRaces = parseInt(
-          b.cells[teamStatsTableHeader.cells.length - 1].textContent
+          b.cells[teamStatsTableHeaderRow.cells.length - 1].textContent
         );
         return bDailyRaces - aDailyRaces;
       });
@@ -149,7 +154,7 @@
       }
 
       // Remove the sort icon from all other columns.
-      Array.from(teamStatsTableHeader.cells).forEach((cell) => {
+      Array.from(teamStatsTableHeaderRow.cells).forEach((cell) => {
         if (cell != dailyRacesHeader) {
           cell.classList.remove("table-filter--asc", "table-filter--desc");
         }
@@ -157,12 +162,12 @@
 
       // Remove rows and add them back in sorted order.
       rows.forEach((row) => {
-        teamStatsTable.querySelector("tbody").removeChild(row);
-        teamStatsTable.querySelector("tbody").appendChild(row);
+        teamStatsTableBody.removeChild(row);
+        teamStatsTableBody.appendChild(row);
       });
 
       // Remove the sort icon from daily races column when another column is clicked.
-      Array.from(teamStatsTableHeader.cells).forEach((cell) => {
+      Array.from(teamStatsTableHeaderRow.cells).forEach((cell) => {
         if (cell != dailyRacesHeader) {
           cell.addEventListener("click", function () {
             dailyRacesHeader.classList.remove(
