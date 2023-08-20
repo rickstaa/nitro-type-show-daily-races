@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Nitro Type - Show Daily Races
 // @namespace    https://greasyfork.org/en/users/863158-rickstaa
-// @version      0.2.0
+// @version      0.3.0
 // @description  Displays the number of daily races completed by each team member in the team roster table on the Nitro Type team page.
 // @author       Rick Staa
 // @match        *://*.nitrotype.com/team/*
@@ -22,8 +22,8 @@
     let timeComponents = timeString.split(" ");
 
     // Retrieve the number of days on the team.
-    let counter = timeComponents[0] != "a" ? timeComponents[0] : 1;
-    let timeKey = timeComponents[1] ? timeComponents[1] : "day";
+    const counter = timeComponents[0] != "a" ? timeComponents[0] : 1;
+    const timeKey = timeComponents[1] ? timeComponents[1] : "day";
     let days;
     switch (timeKey) {
       case "year":
@@ -55,17 +55,41 @@
   };
 
   /**
+   * Wait for the element to be available in the DOM.
+   * @param {*} selector The selector to wait for.
+   * @returns The element.
+   */
+  function waitForElm(selector) {
+    return new Promise((resolve) => {
+      if (document.querySelector(selector)) {
+        return resolve(document.querySelector(selector));
+      }
+
+      const observer = new MutationObserver((mutations) => {
+        if (document.querySelector(selector)) {
+          resolve(document.querySelector(selector));
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    });
+  }
+
+  /**
    * Add the daily races column to the team stats table when the page has loaded.
    */
-  window.addEventListener("load", function () {
-    // Retrieve team stats table.
-    let teamStatsTable = document.querySelector(
+  window.addEventListener("load", async () => {
+    const teamStatsTable = await waitForElm(
       ".table.table--striped.table--selectable.table--team.table--teamOverview"
     );
-    let teamStatsTableHeader = teamStatsTable.querySelector("thead tr");
+    const teamStatsTableHeader = teamStatsTable.querySelector("thead tr");
 
     // Add extra daily races header column.
-    let dailyRacesHeader = document.createElement("th");
+    const dailyRacesHeader = document.createElement("th");
     dailyRacesHeader.classList.add(
       "table-cell",
       "table-cell--lastRace",
@@ -75,22 +99,26 @@
     teamStatsTableHeader.appendChild(dailyRacesHeader);
 
     // Find Team Races and Members Since columns.
-    let teamRacesColumn = Array.from(teamStatsTableHeader.cells).find((cell) =>
-      cell.innerHTML.includes("Team<br>Races")
+    const teamRacesColumn = teamStatsTableHeader.querySelector(
+      'th:contains("Team\\nRaces")'
     ).cellIndex;
-    let memberSinceColumn = Array.from(teamStatsTableHeader.cells).find(
-      (cell) => cell.innerHTML.includes("Member<br>Since")
+    const memberSinceColumn = teamStatsTableHeader.querySelector(
+      'th:contains("Member\\nSince")'
     ).cellIndex;
 
     // Loop through all team members and display the daily races.
     Array.from(teamStatsTable.querySelectorAll("tbody tr")).map((row) => {
       // Calculate daily races.
-      let memberDays = getTimeInDays(row.cells[memberSinceColumn].textContent);
-      let races = row.cells[teamRacesColumn].textContent.replace(",", "");
-      let dailyRaces = races / memberDays;
+      const memberDays = getTimeInDays(
+        row.cells[memberSinceColumn].textContent.trim()
+      );
+      const races = parseInt(
+        row.cells[teamRacesColumn].textContent.replace(",", "")
+      );
+      const dailyRaces = races / memberDays;
 
       // Add daily races column.
-      let dailyRacesCell = document.createElement("td");
+      const dailyRacesCell = document.createElement("td");
       dailyRacesCell.classList.add("table-cell", "table-cell--lastRace");
       dailyRacesCell.textContent = dailyRaces.toFixed(0);
       row.appendChild(dailyRacesCell);
@@ -98,14 +126,14 @@
 
     // Add a click handler that sorts the team members by daily races.
     dailyRacesHeader.addEventListener("click", function () {
-      let rows = Array.from(teamStatsTable.querySelectorAll("tbody tr"));
+      const rows = Array.from(teamStatsTable.querySelectorAll("tbody tr"));
 
       // Sort rows by dailyRaces in descending order.
       rows.sort(function (a, b) {
-        let aDailyRaces = parseFloat(
+        const aDailyRaces = parseInt(
           a.cells[teamStatsTableHeader.cells.length - 1].textContent
         );
-        let bDailyRaces = parseFloat(
+        const bDailyRaces = parseInt(
           b.cells[teamStatsTableHeader.cells.length - 1].textContent
         );
         return bDailyRaces - aDailyRaces;
