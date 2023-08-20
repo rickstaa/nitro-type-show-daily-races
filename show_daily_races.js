@@ -2,7 +2,7 @@
 // @name         Nitro Type - Show Daily Races
 // @namespace    https://greasyfork.org/en/users/863158-rickstaa
 // @version      0.1
-// @description  Shows the daily races in the team roster table on the team page.
+// @description  Displays the number of daily races completed by each team member in the team roster table on the Nitro Type team page.
 // @author       Rick Staa
 // @match        *://*.nitrotype.com/team/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
