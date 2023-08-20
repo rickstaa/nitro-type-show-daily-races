@@ -24,6 +24,7 @@
     // Retrieve the number of days on the team.
     let counter = timeComponents[0] != "a" ? timeComponents[0] : 1;
     let timeKey = timeComponents[1] ? timeComponents[1] : "day";
+    let days;
     switch (timeKey) {
       case "year":
         days = 365;
