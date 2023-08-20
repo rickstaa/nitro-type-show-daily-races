@@ -5,7 +5,7 @@ This repository contains a user script that enhances the team roster table on th
 ## Installation
 
 1.  Install a userscript manager for your browser. For example, [Tampermonkey](https://tampermonkey.net/) for Chrome or [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) for Firefox.
-2.  Go to the [Nitro Type - Show Daily Races](https://greasyfork.org/en/scripts/473517-nitro-type-show-daily-races) script page.
+2.  Go to the [Nitro Type - Show Daily Races](https://greasyfork.org/en/scripts/473519-nitro-type-show-daily-races) script page.
 3.  Click the Install button.
 4.  Go to your Nitro Type team page and refresh the page.
 5.  You should now see a new column in the team roster table that contains the daily races.

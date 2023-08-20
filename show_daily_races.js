@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Nitro Type - Show Daily Races
 // @namespace    https://greasyfork.org/en/users/863158-rickstaa
-// @version      0.3.0
+// @version      0.4.0
 // @description  Displays the number of daily races completed by each team member in the team roster table on the Nitro Type team page.
 // @author       Rick Staa
 // @match        *://*.nitrotype.com/team/*
@@ -65,7 +65,7 @@
         return resolve(document.querySelector(selector));
       }
 
-      const observer = new MutationObserver((mutations) => {
+      const observer = new MutationObserver((_) => {
         if (document.querySelector(selector)) {
           resolve(document.querySelector(selector));
           observer.disconnect();
@@ -86,7 +86,7 @@
     const teamStatsTable = await waitForElm(
       ".table.table--striped.table--selectable.table--team.table--teamOverview"
     );
-    const teamStatsTableHeader = teamStatsTable.querySelector("thead tr");
+    const teamStatsTableHeader = await waitForElm("thead tr");
 
     // Add extra daily races header column.
     const dailyRacesHeader = document.createElement("th");
