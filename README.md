@@ -18,4 +18,4 @@ The script works by adding a new column to the team statistics table that shows 
 
 ## Bugs and contributions
 
-If you find a bug or have a suggestion for how to improve the script, please open [an issue](https://github.com/rickstaa/nitro-type-daily-races/issues) or submit a [pull request](https://github.com/rickstaa/nitro-type-daily-races/compare) on GitHub. We welcome contributions from the community and appreciate your feedback.
+If you find a bug or have a suggestion for how to improve the script, please open [an issue](https://github.com/rickstaa/nitro-type-daily-races/issues) or submit a [pull request](https://github.com/rickstaa/nitro-type-daily-races/compare) on GitHub. We welcome contributions from the community and appreciate your feedback 🚀. Please consult the [contribution guidelines](CONTRIBUTING.md) for more information.
