@@ -1,7 +1,14 @@
-/**
- * @file A small user script that shows the daily races, i.e. races/(days_on_team) on
- * the Nitro Type team page. Can be used with Tampermonkey or Greasemonkey.
- */
+// ==UserScript==
+// @name         Nitro Type - Show Daily Races
+// @namespace    https://greasyfork.org/en/users/863158-rickstaa
+// @version      0.1
+// @description  Shows the daily races in the team roster table on the team page.
+// @author       Rick Staa
+// @match        *://*.nitrotype.com/team/*
+// @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+// @grant        none
+// @license      MIT
+// ==/UserScript==
 
 /**
  * Returns the number of days based on the given time string.
@@ -64,11 +71,11 @@ window.addEventListener("load", function () {
   teamStatsTableHeader.appendChild(dailyRacesHeader);
 
   // Find Team Races and Members Since columns.
-  let teamRacesColumn = Array.from(teamStatsTableHeader.cells).find(
-    (cell) => cell.innerHTML.includes("Team<br>Races")
+  let teamRacesColumn = Array.from(teamStatsTableHeader.cells).find((cell) =>
+    cell.innerHTML.includes("Team<br>Races")
   ).cellIndex;
-  let memberSinceColumn = Array.from(teamStatsTableHeader.cells).find(
-    (cell) => cell.innerHTML.includes("Member<br>Since")
+  let memberSinceColumn = Array.from(teamStatsTableHeader.cells).find((cell) =>
+    cell.innerHTML.includes("Member<br>Since")
   ).cellIndex;
 
   // Loop through all team members and display the daily races.
@@ -121,7 +128,7 @@ window.addEventListener("load", function () {
       teamStatsTable.querySelector("tbody").removeChild(row);
       teamStatsTable.querySelector("tbody").appendChild(row);
     });
-    
+
     // Remove the sort icon from daily races column when another column is clicked.
     Array.from(teamStatsTableHeader.cells).forEach((cell) => {
       if (cell != dailyRacesHeader) {
