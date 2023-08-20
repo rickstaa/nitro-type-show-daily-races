@@ -65,7 +65,7 @@
         return resolve(document.querySelector(selector));
       }
 
-      const observer = new MutationObserver((mutations) => {
+      const observer = new MutationObserver((_) => {
         if (document.querySelector(selector)) {
           resolve(document.querySelector(selector));
           observer.disconnect();
@@ -86,7 +86,7 @@
     const teamStatsTable = await waitForElm(
       ".table.table--striped.table--selectable.table--team.table--teamOverview"
     );
-    const teamStatsTableHeader = teamStatsTable.querySelector("thead tr");
+    const teamStatsTableHeader = await waitForElm("thead tr");
 
     // Add extra daily races header column.
     const dailyRacesHeader = document.createElement("th");
