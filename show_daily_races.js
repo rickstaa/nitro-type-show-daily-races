@@ -10,37 +10,39 @@
 // @license      MIT
 // ==/UserScript==
 
-const TEAM_ID = window.location.href.split("/")[4];
-let TEAM_STATS = null;
-
 /**
  * Fetches team stats from NitroType API.
  * @param {number} teamId - The ID of the team to fetch stats for.
  * @returns {Promise<Object>} - A promise that resolves to an object containing the team stats.
  */
 const fetchTeamStats = async (teamId) => {
-  const response = await fetch(
-    `https://www.nitrotype.com/api/v2/teams/${teamId}`
-  );
-  const data = await response.json();
-  return data;
+  try {
+    const response = await fetch(
+      `https://www.nitrotype.com/api/v2/teams/${teamId}`
+    );
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching team stats: ${error}`);
+    throw error;
+  }
 };
 
 /**
- * Wait for the element to be available in the DOM.
- * @param {*} selector The selector to wait for.
- * @returns The element.
+ * Wait for an element to be available in the DOM.
+ * @param {string} selector - The selector to wait for.
+ * @returns {Promise<Element>} - A promise that resolves to the element.
  */
-function waitForElm(selector) {
+const waitForElm = (selector) => {
   return new Promise((resolve) => {
-    if (document.querySelector(selector)) {
-      return resolve(document.querySelector(selector));
-    }
-
-    const observer = new MutationObserver((_) => {
-      if (document.querySelector(selector)) {
-        resolve(document.querySelector(selector));
-        observer.disconnect();
+    const observer = new MutationObserver((mutationsList) => {
+      for (const mutation of mutationsList) {
+        if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+          const element = document.querySelector(selector);
+          if (element) {
+            observer.disconnect();
+            resolve(element);
+          }
+        }
       }
     });
 
@@ -48,138 +50,214 @@ function waitForElm(selector) {
       childList: true,
       subtree: true,
     });
-  });
-}
 
-(function () {
+    const element = document.querySelector(selector);
+    if (element) {
+      observer.disconnect();
+      resolve(element);
+    }
+  });
+};
+
+/**
+ * Userscript entry point.
+ */
+(() => {
   "use strict";
+
+  const teamID = window.location.href.split("/")[4];
 
   /**
    * Add the daily races column to the team stats table when the page has loaded.
    */
   window.addEventListener("load", async () => {
-    const teamStatsTable = await waitForElm(
-      ".table.table--striped.table--selectable.table--team.table--teamOverview"
-    );
-    const teamStatsTableHeaderRow = await waitForElm(
-      ".table.table--striped.table--selectable.table--team.table--teamOverview thead tr"
-    );
-    const teamStatsTableBody = await waitForElm(
-      ".table.table--striped.table--selectable.table--team.table--teamOverview tbody"
-    );
-    const teamStatsTableRows = Array.from(
-      teamStatsTable.querySelectorAll("tbody tr")
-    );
+    const teamStatsTable = await waitForElm(".table--teamOverview");
 
-    // Add extra daily races header column.
-    const dailyRacesHeader = document.createElement("th");
-    dailyRacesHeader.classList.add(
-      "table-cell",
-      "table-cell--lastRace",
-      "table-filter"
-    );
-    dailyRacesHeader.innerHTML = "Daily<br>Races";
-    teamStatsTableHeaderRow.appendChild(dailyRacesHeader);
-
-    // Find Team Races and Members Since columns.
-    let teamRacesColumn = Array.from(teamStatsTableHeaderRow.cells).find(
-      (cell) => cell.innerHTML.includes("Team<br>Races")
-    ).cellIndex;
-    let memberSinceColumn = Array.from(teamStatsTableHeaderRow.cells).find(
-      (cell) => cell.innerHTML.includes("Member<br>Since")
-    ).cellIndex;
-
-    // Loop through all team members and display the daily races.
-    for (let i = 0; i < teamStatsTableRows.length; i++) {
-      const row = teamStatsTableRows[i];
-
-      // Retrieve member days.
-      const memberSince = row.cells[memberSinceColumn].textContent.trim();
-      const timeComponents = memberSince.split(" ");
-      let memberDays = 0;
-      if (timeComponents[1] === "days") {
-        memberDays = parseInt(timeComponents[0], 10);
-      } else if (timeComponents[1] === "day") {
-        memberDays = 1;
-      } else {
-        if (!TEAM_STATS) {
-          TEAM_STATS = await fetchTeamStats(TEAM_ID);
-        }
-
-        // Retrieve number of days since the user joined the team.
-        const joinStamp = TEAM_STATS.results.members[i].joinStamp;
-        const jointDate = new Date(joinStamp * 1000);
-        const today = new Date();
-        const timeDiff = Math.abs(today.getTime() - jointDate.getTime());
-        memberDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      }
-
-      // Calculate daily races.
-      const races = parseInt(
-        row.cells[teamRacesColumn].textContent.trim().replace(",", ""),
-        10
-      );
-      const dailyRaces = races / memberDays;
-
-      // Add daily races column.
-      const dailyRacesCell = document.createElement("td");
-      dailyRacesCell.classList.add("table-cell", "table-cell--lastRace");
-      dailyRacesCell.textContent = dailyRaces.toFixed(0);
-      row.appendChild(dailyRacesCell);
-    }
-
-    // Add a click handler that sorts the team members by daily races.
-    dailyRacesHeader.addEventListener("click", function () {
-      // Sort rows by dailyRaces in descending order.
-      teamStatsTableRows.sort(function (a, b) {
-        const aDailyRaces = parseInt(
-          a.cells[teamStatsTableHeaderRow.cells.length - 1].textContent.trim(),
-          10
-        );
-        const bDailyRaces = parseInt(
-          b.cells[teamStatsTableHeaderRow.cells.length - 1].textContent.trim(),
-          10
-        );
-        return bDailyRaces - aDailyRaces;
-      });
-
-      // If already sorted descending change to ascending.
-      if (dailyRacesHeader.classList.contains("table-filter--desc")) {
-        teamStatsTableRows.reverse();
-        dailyRacesHeader.classList.remove("table-filter--desc");
-        dailyRacesHeader.classList.add("table-filter--asc");
-      } else {
-        dailyRacesHeader.classList.add("table-filter--desc");
-      }
-
-      // Remove the sort icon from all other columns.
-      Array.from(teamStatsTableHeaderRow.cells).forEach((cell) => {
-        if (cell !== dailyRacesHeader) {
-          cell.classList.remove("table-filter--asc", "table-filter--desc");
-        }
-      });
-
-      // Remove rows and add them back in sorted order.
-      teamStatsTableRows.forEach((row) => {
-        teamStatsTableBody.removeChild(row);
-        teamStatsTableBody.appendChild(row);
-      });
-
-      // Remove the sort icon from daily races column when another column is clicked.
-      Array.from(teamStatsTableHeaderRow.cells).forEach((cell) => {
-        if (cell !== dailyRacesHeader) {
-          cell.addEventListener("click", function () {
-            // Remove the sort icon.
-            dailyRacesHeader.classList.remove(
-              "table-filter--asc",
-              "table-filter--desc"
-            );
-            
-            // Remove the click handler.
-            cell.removeEventListener("click", function () {});
-          });
-        }
-      });
+    // Retrieve current season information.
+    const seasonInfo = NTGLOBALS.ACTIVE_SEASONS.find((s) => {
+      const now = Date.now();
+      return now >= s.startStamp * 1e3 && now <= s.endStamp * 1e3;
     });
+    const DAYS_SINCE_SEASON_START = Math.ceil(
+      Math.abs(Date.now() - seasonInfo.startStamp * 1000) /
+        (1000 * 60 * 60 * 24)
+    );
+
+    // Retrieve team stats.
+    const { results: teamStats } = await fetchTeamStats(teamID);
+
+    // Loop through all team members in the table and calculate dailyRaces.
+    const dailyRacesAllTime = teamStats.members.reduce((acc, member) => {
+      const { displayName, username, joinStamp, played } = member;
+      const memberName = displayName || username;
+      const joinDate = new Date(joinStamp * 1000);
+      const memberDays = Math.ceil(
+        Math.abs(Date.now() - joinDate.getTime()) / (1000 * 3600 * 24)
+      );
+      const dailyRaces = played / memberDays;
+      acc[memberName] = dailyRaces.toFixed(0);
+      return acc;
+    }, {});
+
+    /**
+     * Removes the daily races column from the DOM.
+     */
+    const removeDailyRacesColumn = () => {
+      document
+        .querySelectorAll(".daily-races-header, .daily-races-column-item")
+        .forEach((element) => element.remove());
+    };
+
+    /**
+     * Adds a daily races column to the team stats table and sorts the table by daily races.
+     */
+    const addDailyRacesColumn = async () => {
+      // Check if daily races column was sorted.
+      const oldDailyRacesHeader = document.querySelector(".daily-races-header");
+      const wasSorted =
+        oldDailyRacesHeader?.classList.contains("table-filter--asc") ||
+        oldDailyRacesHeader?.classList.contains("table-filter--desc");
+      const sortType = oldDailyRacesHeader?.classList.contains(
+        "table-filter--asc"
+      )
+        ? "asc"
+        : "desc";
+
+      // Remove daily races column if it already exists.
+      await removeDailyRacesColumn();
+
+      // Add extra daily races header column.
+      const dailyRacesHeader = document.createElement("th");
+      dailyRacesHeader.classList.add(
+        "table-cell",
+        "table-cell--lastRace",
+        "table-filter",
+        "daily-races-header"
+      );
+      if (wasSorted) {
+        dailyRacesHeader.classList.add(`table-filter--${sortType}`);
+      }
+      dailyRacesHeader.innerHTML = "Daily<br>Races";
+      teamStatsTable.querySelector("thead tr").appendChild(dailyRacesHeader);
+
+      /**
+       * Sort the daily races column.
+       * @param {string} sortType The sort type to use. Either "asc" or "desc".
+       */
+      const sortDailyRacesColumn = (sortType) => {
+        // Sort rows by dailyRaces in descending order.
+        const teamStatsTableRows = Array.from(
+          teamStatsTable.querySelectorAll("tbody tr")
+        );
+        const sortedRows = teamStatsTableRows
+          .map((row) => {
+            const memberName = row.cells[1]
+              .querySelector("span")
+              .textContent.trim();
+            const dailyRaces = parseInt(
+              row.cells[dailyRacesHeader.cellIndex].textContent.trim(),
+              10
+            );
+            return { row, memberName, dailyRaces };
+          })
+          .sort((a, b) => b.dailyRaces - a.dailyRaces)
+          .map(({ row }) => row);
+
+        // Revert the order if the sortType is ascending.
+        if (sortType === "asc") {
+          sortedRows.reverse();
+          dailyRacesHeader.classList.remove("table-filter--desc");
+          dailyRacesHeader.classList.add("table-filter--asc");
+        } else {
+          dailyRacesHeader.classList.remove("table-filter--asc");
+          dailyRacesHeader.classList.add("table-filter--desc");
+        }
+
+        // Remove the sort icon from all other columns.
+        Array.from(teamStatsTable.querySelector("thead tr").cells).forEach(
+          (cell) => {
+            if (cell !== dailyRacesHeader) {
+              cell.classList.remove("table-filter--asc", "table-filter--desc");
+            }
+          }
+        );
+
+        // Remove rows and add them back in sorted order.
+        teamStatsTable.querySelector("tbody").append(...sortedRows);
+
+        // Remove the sort icon from daily races column when another column is clicked.
+        Array.from(teamStatsTable.querySelector("thead tr").cells).forEach(
+          (cell) => {
+            if (cell !== dailyRacesHeader) {
+              cell.addEventListener("click", () => {
+                // Remove the sort icon.
+                dailyRacesHeader.classList.remove(
+                  "table-filter--asc",
+                  "table-filter--desc"
+                );
+              });
+            }
+          }
+        );
+      };
+
+      // Loop through all team members and display the daily races.
+      const teamStatsTableRows = Array.from(
+        teamStatsTable.querySelectorAll("tbody tr")
+      );
+      teamStatsTableRows.forEach((row) => {
+        // Retrieve member name.
+        const memberName = row.cells[1]
+          .querySelector("span")
+          .textContent.trim();
+
+        // Add daily races column.
+        const dailyRacesCell = document.createElement("td");
+        dailyRacesCell.classList.add(
+          "table-cell",
+          "table-cell--lastRace",
+          "daily-races-column-item"
+        );
+
+        // Calculate team stats or season stats based on the table type.
+        let dailyRaces = 0;
+        if (teamStatsTable.classList.contains("table--teamSeason")) {
+          const { played } = teamStats.season.find(
+            (member) =>
+              member.displayName === memberName ||
+              member.username === memberName
+          );
+          dailyRaces = (played / DAYS_SINCE_SEASON_START).toFixed(0);
+        } else {
+          dailyRaces = dailyRacesAllTime[memberName];
+        }
+        dailyRacesCell.textContent = dailyRaces;
+        row.appendChild(dailyRacesCell);
+      });
+
+      // If sorted sort the columns.
+      if (wasSorted) {
+        sortDailyRacesColumn(sortType);
+      }
+
+      // Add a click handler that sorts the team members by daily races.
+      dailyRacesHeader.addEventListener("click", (event) => {
+        const elementClasses = event.target.classList;
+        sortDailyRacesColumn(
+          elementClasses.contains("table-filter--desc") ? "asc" : "desc"
+        ); // Switch sort type.
+      });
+    };
+
+    // Add daily races column.
+    await addDailyRacesColumn();
+
+    // Re-load daily races column when the table filter is changed.
+    const tableFilterObserver = new MutationObserver(async () => {
+      await addDailyRacesColumn();
+    });
+
+    // Start observing the element.
+    tableFilterObserver.observe(teamStatsTable, { attributes: true });
   });
 })();
