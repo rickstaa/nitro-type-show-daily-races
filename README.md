@@ -1,6 +1,6 @@
 # Nitro Type - Show Daily Races
 
-This repository contains a user script that enhances the team roster table on the [Nitro Type](https://www.nitrotype.com/)  team page by adding a new column that displays the average number of daily races completed by each team member. This information can be useful for team leaders who want to track the performance of their team members and make informed decisions about promotions and demotions.
+This repository contains a userscript that enhances the team roster table on the [Nitro Type](https://www.nitrotype.com/)  team page by adding a new column that displays the average number of daily races completed by each team member. This information can be useful for team leaders who want to track the performance of their team members and make informed decisions about promotions and demotions.
 
 ## Installation
 
