@@ -169,10 +169,14 @@ function waitForElm(selector) {
       Array.from(teamStatsTableHeaderRow.cells).forEach((cell) => {
         if (cell !== dailyRacesHeader) {
           cell.addEventListener("click", function () {
+            // Remove the sort icon.
             dailyRacesHeader.classList.remove(
               "table-filter--asc",
               "table-filter--desc"
             );
+            
+            // Remove the click handler.
+            cell.removeEventListener("click", function () {});
           });
         }
       });
