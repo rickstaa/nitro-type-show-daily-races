@@ -10,9 +10,13 @@ This repository contains a userscript that enhances the team roster table on the
 4.  Go to your Nitro Type team page and refresh the page.
 5.  You should now see a new column in the team roster table that contains the daily races.
 
+## Uninstallation
+
+To uninstall the userscript, simply disable or remove it from your userscript manager.
+
 ## How it works
 
-The script works by adding a new column to the team statistics table that shows the average number of daily races per team member. The script calculates this average by dividing the total number of team races by the number of days a team member has been on the team.
+The script works by adding a new column to the team statistics table that shows the average number of daily races per team member. The script calculates this average by dividing the total number of team races by the number of days a team member has been on the team. The data for this calculation is retrieved using the [NitroType API](https://www.nitrotype.com/api/v2).
 
 ## Screenshot
 
