@@ -66,6 +66,7 @@ const waitForElm = (selector) => {
   "use strict";
 
   const teamID = window.location.href.split("/")[4];
+  let originalRows = [];
 
   /**
    * Add the daily races column to the team stats table when the page has loaded.
@@ -145,10 +146,12 @@ const waitForElm = (selector) => {
        * @param {string} sortType The sort type to use. Either "asc" or "desc".
        */
       const sortDailyRacesColumn = (sortType) => {
-        // Store original row order.
-        const originalRows = Array.from(
-          teamStatsTable.querySelectorAll("tbody tr")
-        );
+        if (originalRows.length === 0) {
+          // Store original row order.
+          originalRows = Array.from(
+            teamStatsTable.querySelectorAll("tbody tr")
+          );
+        };
 
         // Sort rows by dailyRaces in descending order.
         const teamStatsTableRows = Array.from(
@@ -203,6 +206,7 @@ const waitForElm = (selector) => {
 
                 // Restore original row order.
                 teamStatsTable.querySelector("tbody").append(...originalRows);
+                originalRows = [];
               });
             }
           }
