@@ -145,6 +145,11 @@ const waitForElm = (selector) => {
        * @param {string} sortType The sort type to use. Either "asc" or "desc".
        */
       const sortDailyRacesColumn = (sortType) => {
+        // Store original row order.
+        const originalRows = Array.from(
+          teamStatsTable.querySelectorAll("tbody tr")
+        );
+
         // Sort rows by dailyRaces in descending order.
         const teamStatsTableRows = Array.from(
           teamStatsTable.querySelectorAll("tbody tr")
@@ -185,7 +190,7 @@ const waitForElm = (selector) => {
         // Remove rows and add them back in sorted order.
         teamStatsTable.querySelector("tbody").append(...sortedRows);
 
-        // Remove the sort icon from daily races column when another column is clicked.
+        // Restore original order if other columns are clicked.
         Array.from(teamStatsTable.querySelector("thead tr").cells).forEach(
           (cell) => {
             if (cell !== dailyRacesHeader) {
@@ -195,6 +200,9 @@ const waitForElm = (selector) => {
                   "table-filter--asc",
                   "table-filter--desc"
                 );
+
+                // Restore original row order.
+                teamStatsTable.querySelector("tbody").append(...originalRows);
               });
             }
           }
