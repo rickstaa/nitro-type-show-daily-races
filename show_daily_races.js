@@ -60,6 +60,19 @@ const waitForElm = (selector) => {
 };
 
 /**
+ * Calculates the number of days a member has been in the group since their join date.
+ * @param {number} joinStamp - The timestamp of the member's join date.
+ * @returns {number} The number of days the member has been in the group.
+ */
+const calculateMemberDays = (joinStamp) => {
+  const joinDate = new Date(joinStamp * 1000);
+  const memberDays = Math.ceil(
+    Math.abs(Date.now() - joinDate.getTime()) / (1000 * 3600 * 24)
+  );
+  return memberDays;
+};
+
+/**
  * Userscript entry point.
  */
 (() => {
@@ -87,18 +100,21 @@ const waitForElm = (selector) => {
     // Retrieve team stats.
     const { results: teamStats } = await fetchTeamStats(teamID);
 
-    // Loop through all team members in the table and calculate dailyRaces.
-    const dailyRacesAllTime = teamStats.members.reduce((acc, member) => {
-      const { displayName, username, joinStamp, played } = member;
-      const memberName = displayName || username;
-      const joinDate = new Date(joinStamp * 1000);
-      const memberDays = Math.ceil(
-        Math.abs(Date.now() - joinDate.getTime()) / (1000 * 3600 * 24)
-      );
-      const dailyRaces = played / memberDays;
-      acc[memberName] = dailyRaces.toFixed(0);
-      return acc;
-    }, {});
+    // Calculate dailyRaces for all time and the current season for each member.
+    const dailyMemberRaces = teamStats.members.reduce(
+      (acc, member) => {
+        const { displayName, username, joinStamp, played } = member;
+        const memberName = displayName || username;
+        const memberDays = calculateMemberDays(joinStamp);
+        const seasonMemberDays = Math.min(memberDays, DAYS_SINCE_SEASON_START);
+        const allTimeDailyRaces = played / memberDays;
+        const seasonDailyRaces = played / seasonMemberDays;
+        acc.allTime[memberName] = Math.round(allTimeDailyRaces).toFixed(0);
+        acc.season[memberName] = Math.round(seasonDailyRaces).toFixed(0);
+        return acc;
+      },
+      { allTime: {}, season: {} }
+    );
 
     /**
      * Removes the daily races column from the DOM.
@@ -151,7 +167,7 @@ const waitForElm = (selector) => {
           originalRows = Array.from(
             teamStatsTable.querySelectorAll("tbody tr")
           );
-        };
+        }
 
         // Sort rows by dailyRaces in descending order.
         const teamStatsTableRows = Array.from(
@@ -232,16 +248,11 @@ const waitForElm = (selector) => {
         );
 
         // Calculate team stats or season stats based on the table type.
-        let dailyRaces = 0;
+        let dailyRaces;
         if (teamStatsTable.classList.contains("table--teamSeason")) {
-          const { played } = teamStats.season.find(
-            (member) =>
-              member.displayName === memberName ||
-              member.username === memberName
-          );
-          dailyRaces = (played / DAYS_SINCE_SEASON_START).toFixed(0);
+          dailyRaces = dailyMemberRaces.season[memberName];
         } else {
-          dailyRaces = dailyRacesAllTime[memberName];
+          dailyRaces = dailyMemberRaces.allTime[memberName];
         }
         dailyRacesCell.textContent = dailyRaces;
         row.appendChild(dailyRacesCell);
