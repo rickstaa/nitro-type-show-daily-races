@@ -2,7 +2,7 @@
 // @name         Nitro Type - Show Daily Races
 // @namespace    https://github.com/rickstaa/nitro-type-show-daily-races
 // @version      1.5.0
-// @description  Displays the number of daily races completed by each team member in the team roster table on the Nitro Type team page.
+// @description  Displays the number of daily races completed by each member of a Nitro Type team in the team roster table on the Nitro Type team page. 
 // @author       Rick Staa
 // @match        *://*.nitrotype.com/team/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -62,13 +62,12 @@ const waitForElm = (selector) => {
 /**
  * Calculates the number of days a member has been in the group since their join date.
  * @param {number} joinStamp - The timestamp of the member's join date.
- * @returns {number} The number of days the member has been in the group.
+ * @returns {number} The number of days (including fractions) the member has been in the group.
  */
 const calculateMemberDays = (joinStamp) => {
   const joinDate = new Date(joinStamp * 1000);
-  const memberDays = Math.ceil(
-    Math.abs(Date.now() - joinDate.getTime()) / (1000 * 3600 * 24)
-  );
+  const memberDays =
+    Math.abs(Date.now() - joinDate.getTime()) / (1000 * 3600 * 24);
   return memberDays;
 };
 
@@ -92,25 +91,36 @@ const calculateMemberDays = (joinStamp) => {
       const now = Date.now();
       return now >= s.startStamp * 1e3 && now <= s.endStamp * 1e3;
     });
-    const DAYS_SINCE_SEASON_START = Math.ceil(
+    const DAYS_SINCE_SEASON_START =
       Math.abs(Date.now() - seasonInfo.startStamp * 1000) /
-        (1000 * 60 * 60 * 24)
-    );
+      (1000 * 60 * 60 * 24);
 
     // Retrieve team stats.
     const { results: teamStats } = await fetchTeamStats(teamID);
 
-    // Calculate dailyRaces for all time and the current season for each member.
+    // Calculate all time and season daily races.
     const dailyMemberRaces = teamStats.members.reduce(
       (acc, member) => {
+        // Calculate all time daily races.
         const { displayName, username, joinStamp, played } = member;
-        const memberName = displayName || username;
-        const memberDays = calculateMemberDays(joinStamp);
-        const seasonMemberDays = Math.min(memberDays, DAYS_SINCE_SEASON_START);
-        const allTimeDailyRaces = played / memberDays;
-        const seasonDailyRaces = played / seasonMemberDays;
-        acc.allTime[memberName] = Math.round(allTimeDailyRaces).toFixed(0);
-        acc.season[memberName] = Math.round(seasonDailyRaces).toFixed(0);
+        const memberName = `${displayName || username}`;
+        const memberDays = Math.max(1, calculateMemberDays(joinStamp));
+        const allTimeDailyRaces = played / Math.round(memberDays);
+        acc.allTime[memberName] = Math.round(allTimeDailyRaces);
+
+        // Calculate daily races performed this season for the team.
+        const { played: seasonPlayed = played } =
+          teamStats.season.find(
+            (m) => m.displayName === displayName || m.username === username
+          ) || {};
+        const seasonMemberDays = Math.max(
+          1,
+          Math.min(memberDays, DAYS_SINCE_SEASON_START)
+        );
+        const seasonRaces = Math.min(played, seasonPlayed);
+        const seasonDailyRaces = seasonRaces / Math.round(seasonMemberDays);
+        acc.season[memberName] = Math.round(seasonDailyRaces);
+
         return acc;
       },
       { allTime: {}, season: {} }
