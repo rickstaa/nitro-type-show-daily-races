@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Nitro Type - Show Daily Races
 // @namespace    https://github.com/rickstaa/nitro-type-show-daily-races
-// @version      1.5.0
+// @version      1.6.0
 // @description  Displays the number of daily races completed by each member of a Nitro Type team in the team roster table on the Nitro Type team page. 
 // @author       Rick Staa
 // @match        *://*.nitrotype.com/team/*
