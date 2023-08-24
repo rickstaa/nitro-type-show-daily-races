@@ -2,7 +2,7 @@
 // @name         Nitro Type - Show Daily Races
 // @namespace    https://github.com/rickstaa/nitro-type-show-daily-races
 // @version      1.6.0
-// @description  Displays the number of daily races completed by each member of a Nitro Type team in the team roster table on the Nitro Type team page. 
+// @description  Displays the number of daily races completed by each member of a Nitro Type team in the team roster table on the Nitro Type team page.
 // @author       Rick Staa
 // @match        *://*.nitrotype.com/team/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -12,13 +12,13 @@
 
 /**
  * Fetches team stats from NitroType API.
- * @param {number} teamId - The ID of the team to fetch stats for.
+ * @param {number} teamTAG - The TAG of the team to fetch stats for.
  * @returns {Promise<Object>} - A promise that resolves to an object containing the team stats.
  */
-const fetchTeamStats = async (teamId) => {
+const fetchTeamStats = async (teamTAG) => {
   try {
     const response = await fetch(
-      `https://www.nitrotype.com/api/v2/teams/${teamId}`
+      `https://www.nitrotype.com/api/v2/teams/${teamTAG}`
     );
     return await response.json();
   } catch (error) {
@@ -103,7 +103,8 @@ const calculateMemberDays = (joinStamp) => {
       (acc, member) => {
         // Calculate all time daily races.
         const { displayName, username, joinStamp, played } = member;
-        const memberName = `${displayName || username}`;
+        let memberName = `${displayName || username}`;
+        memberName = memberName.replace(/[\f]+/g, ""); // Remove special characters.
         const memberDays = Math.max(1, calculateMemberDays(joinStamp));
         const allTimeDailyRaces = played / Math.round(memberDays);
         acc.allTime[memberName] = Math.round(allTimeDailyRaces);
@@ -247,7 +248,7 @@ const calculateMemberDays = (joinStamp) => {
         // Retrieve member name.
         const memberName = row.cells[1]
           .querySelector("span")
-          .textContent.trim();
+          .textContent.trim()
 
         // Add daily races column.
         const dailyRacesCell = document.createElement("td");
